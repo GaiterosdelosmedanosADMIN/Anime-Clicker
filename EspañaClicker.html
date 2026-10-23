@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>España Clicker - Edición Mundial</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body {
+      background: linear-gradient(135deg, #aa151b 30%, #f1bf00 30%, #f1bf00 70%, #aa151b 70%);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+    }
+    .container {
+      background-color: white;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      width: 95%;
+      max-width: 420px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+      position: relative;
+    }
+    h1 { color: #aa151b; font-size: 1.4rem; margin-top: 0; margin-bottom: 6px; }
+    
+    .stats { 
+      font-size: 1.1rem; 
+      font-weight: bold; 
+      background: #fff3c4; 
+      padding: 8px; 
+      border-radius: 8px; 
+      margin: 6px 0; 
+      border: 2px solid #f1bf00; 
+    }
+
+    .click-container {
+      position: relative;
+      margin: 10px 0;
+    }
+
+    .click-btn {
+      background-color: #aa151b;
+      color: white;
+      border: 4px solid #f1bf00;
+      font-size: 1.4rem;
+      padding: 15px;
+      border-radius: 50px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: bold;
+      box-shadow: 0 5px 0 #7a0e13;
+      transition: transform 0.05s;
+    }
+    .click-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #7a0e13;
+    }
+
+    /* Números flotantes */
+    .floating-num {
+      position: absolute;
+      color: #aa151b;
+      font-weight: bold;
+      font-size: 1.2rem;
+      pointer-events: none;
+      animation: floatUp 0.8s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
+    }
+
+    .shop, .achievements {
+      margin-top: 10px;
+      text-align: left;
+      border-top: 2px solid #f1bf00;
+      padding-top: 6px;
+    }
+    .shop h3, .achievements h3 { margin: 0 0 4px 0; color: #aa151b; font-size: 0.95rem; text-align: center; }
+    
+    /* Contenedor con Scroll para los 20 ítems */
+    .shop-list {
+      max-height: 180px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .shop-list::-webkit-scrollbar { width: 6px; }
+    .shop-list::-webkit-scrollbar-thumb { background: #f1bf00; border-radius: 4px; }
+
+    .upgrade-btn {
+      width: 100%;
+      background-color: #2e7d32;
+      color: white;
+      border: none;
+      padding: 6px 8px;
+      margin: 3px 0;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+    }
+    .upgrade-btn:disabled {
+      background-color: #9e9e9e;
+      cursor: not-allowed;
+    }
+    .item-info { display: flex; flex-direction: column; text-align: left; }
+    .item-desc { font-size: 0.65rem; color: #e0f2f1; font-weight: normal; }
+
+    .achievements-box {
+      font-size: 0.75rem;
+      background: #f5f5f5;
+      padding: 5px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      color: #333;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🇪🇸 España Clicker 🇪🇸</h1>
+    
+    <div class="stats">
+      Puntos: <span id="score">0</span> 🇪🇸<br>
+      <small style="font-size: 0.75rem; color: #555;">
+        +<span id="cpc">1</span>/clic | +<span id="cps">0</span>/seg
+      </small>
+    </div>
+
+    <div class="click-container">
+      <button class="click-btn" id="clickBtn">¡CLIC ESPAÑA!</button>
+    </div>
+
+    <div class="shop">
+      <h3>🛒 Tienda de 20 Tesoros Españoles</h3>
+      <div class="shop-list" id="shopList">
+        <!-- Los 20 ítems se cargan automáticamente desde JavaScript -->
+      </div>
+    </div>
+
+    <div class="achievements">
+      <h3>🏆 Logros</h3>
+      <div class="achievements-box" id="achievementText">¡Aún sin logros! Sigue jugando.</div>
+    </div>
+  </div>
+
+  <script>
+    let score = 0;
+    let powerClick = 1;
+    let autoClick = 0;
+    let unlockedAchievements = [];
+
+    // Lista de los 20 ítems de España
+    const items = [
+      { id: 'abanico', name: '💃 Abanico Flamenco', desc: '+1 pto/clic', cost: 15, type: 'click', val: 1, mult: 1.5, owned: 0 },
+      { id: 'castanuelas', name: '🎵 Castañuelas', desc: '+3 ptos/clic', cost: 100, type: 'click', val: 3, mult: 1.6, owned: 0 },
+      { id: 'churros', name: '🍫 Churros con Chocolate', desc: '+7 ptos/clic', cost: 350, type: 'click', val: 7, mult: 1.65, owned: 0 },
+      { id: 'jamon', name: '🍖 Jamón Ibérico', desc: '+15 ptos/clic', cost: 1200, type: 'click', val: 15, mult: 1.7, owned: 0 },
+      { id: 'sombrero', name: '🤠 Sombrero Cordobés', desc: '+35 ptos/clic', cost: 4500, type: 'click', val: 35, mult: 1.75, owned: 0 },
+      { id: 'capote', name: '🐂 Capote de Torero', desc: '+80 ptos/clic', cost: 15000, type: 'click', val: 80, mult: 1.8, owned: 0 },
+      { id: 'abanicooro', name: '✨ Abanico de Oro', desc: '+200 ptos/clic', cost: 50000, type: 'click', val: 200, mult: 1.85, owned: 0 },
+      { id: 'guitarra', name: '🎸 Guitarra Española', desc: '+500 ptos/clic', cost: 180000, type: 'click', val: 500, mult: 1.9, owned: 0 },
+      { id: 'coronareal', name: '👑 Corona Real', desc: '+1,500 ptos/clic', cost: 600000, type: 'click', val: 1500, mult: 1.95, owned: 0 },
+      { id: 'trono', name: '🏰 Trono de Carlos V', desc: '+5,000 ptos/clic', cost: 2000000, type: 'click', val: 5000, mult: 2.0, owned: 0 },
+
+      { id: 'paella', name: '🥘 Paella Valenciana', desc: '+2 ptos/seg', cost: 50, type: 'auto', val: 2, mult: 1.5, owned: 0 },
+      { id: 'tapas', name: '🍷 Barra de Tapas', desc: '+10 ptos/seg', cost: 400, type: 'auto', val: 10, mult: 1.6, owned: 0 },
+      { id: 'rioja', name: '🍇 Vino de Rioja', desc: '+25 ptos/seg', cost: 1500, type: 'auto', val: 25, mult: 1.65, owned: 0 },
+      { id: 'tortilla', name: '🥔 Tortilla de Patatas', desc: '+65 ptos/seg', cost: 5500, type: 'auto', val: 65, mult: 1.7, owned: 0 },
+      { id: 'gazpacho', name: '🥣 Gazpacho Andaluz', desc: '+150 ptos/seg', cost: 20000, type: 'auto', val: 150, mult: 1.75, owned: 0 },
+      { id: 'museo', name: '🖼️ Museo del Prado', desc: '+400 ptos/seg', cost: 75000, type: 'auto', val: 400, mult: 1.8, owned: 0 },
+      { id: 'sagrada', name: '⛪ Sagrada Familia', desc: '+1,000 ptos/seg', cost: 250000, type: 'auto', val: 1000, mult: 1.85, owned: 0 },
+      { id: 'bernabeu', name: '⚽ Estadio Bernabéu', desc: '+3,000 ptos/seg', cost: 900000, type: 'auto', val: 3000, mult: 1.9, owned: 0 },
+      { id: 'parqueguell', name: '🦎 Parque Güell', desc: '+8,000 ptos/seg', cost: 3500000, type: 'auto', val: 8000, mult: 1.95, owned: 0 },
+      { id: 'alhambra', name: '🕌 La Alhambra', desc: '+20,000 ptos/seg', cost: 12000000, type: 'auto', val: 20000, mult: 2.0, owned: 0 }
+    ];
+
+    const scoreSpan = document.getElementById('score');
+    const cpcSpan = document.getElementById('cpc');
+    const cpsSpan = document.getElementById('cps');
+    const btnClick = document.getElementById('clickBtn');
+    const container = document.querySelector('.click-container');
+    const shopList = document.getElementById('shopList');
+    const achievementBox = document.getElementById('achievementText');
+
+    // Cargar partida guardada si existe
+    function loadGame() {
+      const savedScore = localStorage.getItem('esp_score');
+      const savedPpc = localStorage.getItem('esp_ppc');
+      const savedCps = localStorage.getItem('esp_cps');
+      const savedItems = localStorage.getItem('esp_items');
+
+      if (savedScore !== null) score = parseInt(savedScore);
+      if (savedPpc !== null) powerClick = parseInt(savedPpc);
+      if (savedCps !== null) autoClick = parseInt(savedCps);
+      if (savedItems !== null) {
+        const parsed = JSON.parse(savedItems);
+        items.forEach((item, index) => {
+          if (parsed[index]) {
+            item.cost = parsed[index].cost;
+            item.owned = parsed[index].owned;
+          }
+        });
+      }
+      renderShop();
+      updateUI();
+    }
+
+    function saveGame() {
+      localStorage.setItem('esp_score', score);
+      localStorage.setItem('esp_ppc', powerClick);
+      localStorage.setItem('esp_cps', autoClick);
+      localStorage.setItem('esp_items', JSON.stringify(items));
+    }
+
+    // Renderizar la tienda dinámicamente
+    function renderShop() {
+      shopList.innerHTML = '';
+      items.forEach((item, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'upgrade-btn';
+        btn.id = 'item-' + index;
+        btn.innerHTML = `
+          <span class="item-info">
+            <span>${item.name} (${item.owned})</span>
+            <span class="item-desc">${item.desc}</span>
+          </span>
+          <span id="cost-${index}">${item.cost} pts</span>
+        `;
+        btn.addEventListener('click', () => buyItem(index));
+        shopList.appendChild(btn);
+      });
+    }
+
+    function buyItem(index) {
+      const item = items[index];
+      if (score >= item.cost) {
+        score -= item.cost;
+        item.owned += 1;
+        
+        if (item.type === 'click') {
+          powerClick += item.val;
+        } else {
+          autoClick += item.val;
+        }
+
+        item.cost = Math.floor(item.cost * item.mult);
+        renderShop();
+        updateUI();
+        saveGame();
+      }
+    }
+
+    function updateUI() {
+      scoreSpan.innerText = score;
+      cpcSpan.innerText = powerClick;
+      cpsSpan.innerText = autoClick;
+
+      items.forEach((item, index) => {
+        const btn = document.getElementById('item-' + index);
+        const costSpan = document.getElementById('cost-' + index);
+        if (btn && costSpan) {
+          costSpan.innerText = item.cost + " pts";
+          btn.disabled = score < item.cost;
+        }
+      });
+
+      checkAchievements();
+    }
+
+    function checkAchievements() {
+      let text = "🏆 Logros:\n";
+      let count = 0;
+
+      if (score >= 1000 && !unlockedAchievements.includes(1)) unlockedAchievements.push(1);
+      if (score >= 50000 && !unlockedAchievements.includes(2)) unlockedAchievements.push(2);
+      if (autoClick >= 500 && !unlockedAchievements.includes(3)) unlockedAchievements.push(3);
+
+      if (unlockedAchievements.includes(1)) { text += "✅ Turista (1k) | "; count++; }
+      if (unlockedAchievements.includes(2)) { text += "✅ Magnate (50k) | "; count++; }
+      if (unlockedAchievements.includes(3)) { text += "✅ Imperio Pasivo (500/s)"; count++; }
+
+      if (count === 0) {
+        achievementBox.innerText = "¡Aún sin logros! Sigue acumulando puntos.";
+      } else {
+        achievementBox.innerText = text;
+      }
+    }
+
+    // Efecto visual de números flotantes
+    function showFloatingNumber(e) {
+      const floatEl = document.createElement('div');
+      floatEl.classList.add('floating-num');
+      floatEl.innerText = "+" + powerClick;
+      
+      const rect = btnClick.getBoundingClientRect();
+      const x = e.clientX ? e.clientX - rect.left : rect.width / 2;
+      const y = e.clientY ? e.clientY - rect.top : rect.height / 2;
+      
+      floatEl.style.left = x + 'px';
+      floatEl.style.top = y + 'px';
+      container.appendChild(floatEl);
+
+      setTimeout(() => floatEl.remove(), 800);
+    }
+
+    btnClick.addEventListener('click', (e) => {
+      score += powerClick;
+      showFloatingNumber(e);
+      updateUI();
+      saveGame();
+    });
+
+    // Generador automático por segundo
+    setInterval(() => {
+      if (autoClick > 0) {
+        score += autoClick;
+        updateUI();
+        saveGame();
+      }
+    }, 1000);
+
+    // Iniciar juego
+    loadGame();
+  </script>
+</body>
+</html>
